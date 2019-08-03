@@ -235,9 +235,11 @@ bool MQTTConnect(int controller_idx)
     updateMQTTclient_connected();
     statusLED(true);
     mqtt_reconnect_count = 0;
-    // call all installed controller to publish autodiscover data
+    // call all installed controller to publish autodiscover data, but only once after boot
     if (MQTTclient_should_reconnect) CPluginCall(CPLUGIN_GOT_CONNECTED, 0);
     MQTTclient_should_reconnect = false;
+    // notify plugins that the connection is established or reestablished
+    PluginCall(PLUGIN_GOT_CONNECTED, 0, dummyString);
     return true; // end loop if succesfull
   }
   return false;

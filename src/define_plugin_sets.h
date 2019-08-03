@@ -110,12 +110,30 @@ To create/register a plugin, you have to :
     #define WEBSERVER_RULES_DEBUG 0
 #endif
 
-#ifdef PLUGIN_BUILD_MINIMAL_OTA
-    #define PLUGIN_DESCR  "Minimal 1M OTA"
+#ifdef PLUGIN_BUILD_NORMAL_HOMIE
+    #define PLUGIN_DESCR  "Normal Homie"
+    #define  PLUGIN_SET_STABLE
+    #define USES_P086   // Receiving values according Homie convention. Works together with C014 Homie controller
+    #define USES_P212   // MY9291 RGBW LED driver
+    #define  CONTROLLER_SET_STABLE
+    #define USES_C014   // homie 3 & 4dev MQTT
+    #define  NOTIFIER_SET_STABLE
+
+    #ifndef BUILD_NO_DEBUG
+      #define BUILD_NO_DEBUG
+    #endif
+    #ifdef WEBSERVER_RULES_DEBUG
+      #undef WEBSERVER_RULES_DEBUG
+    #endif
+    #define WEBSERVER_RULES_DEBUG 0
+#endif
+
+#ifdef PLUGIN_BUILD_MINIMAL_HOMIE_OTA
+    #define PLUGIN_DESCR  "Minimal 1M Homie OTA"
 
     #define CONTROLLER_SET_NONE
 
-    #define BUILD_MINIMAL_OTA
+    #define BUILD_MINIMAL_HOMIE_OTA
     #ifndef BUILD_NO_DEBUG
       #define BUILD_NO_DEBUG
     #endif
@@ -138,6 +156,13 @@ To create/register a plugin, you have to :
 
     #define PLUGIN_SET_NONE
 
+    #ifndef USES_P086
+      #define USES_P086   // Receiving values according Homie convention. Works together with C014 Homie controller
+    #endif
+    #ifndef USES_P212
+      #define USES_P212   // MY9291 RGBW LED driver
+    #endif
+
     #ifndef USES_P001
         #define USES_P001   // switch
     #endif
@@ -145,7 +170,69 @@ To create/register a plugin, you have to :
       #define USES_P026   // SysInfo
     #endif
     #ifndef USES_P033
-      #define USES_P033   // Dummy
+//      #define USES_P033   // Dummy
+    #endif
+    #ifndef USES_P037
+//        #define USES_P037   // MQTTImport
+    #endif
+
+    #ifndef USES_P004
+//        #define USES_P004   // Dallas
+    #endif
+    #ifndef USES_P005
+//        #define USES_P005   // DHT
+    #endif
+
+    #ifdef USE_SERVO
+      #undef USE_SERVO
+    #endif
+#endif
+
+
+#ifdef PLUGIN_BUILD_MINIMAL_OTA
+    #define PLUGIN_DESCR  "Minimal 1M Homie OTA"
+
+    #define CONTROLLER_SET_NONE
+
+    #define BUILD_MINIMAL_OTA
+    #ifndef BUILD_NO_DEBUG
+      #define BUILD_NO_DEBUG
+    #endif
+    #ifdef WEBSERVER_RULES_DEBUG
+      #undef WEBSERVER_RULES_DEBUG
+    #endif
+    #define WEBSERVER_RULES_DEBUG 0
+
+//    #define USES_C001   // Domoticz HTTP
+//    #define USES_C002   // Domoticz MQTT
+//    #define USES_C005   // OpenHAB MQTT
+//    #define USES_C006   // PiDome MQTT
+//    #define USES_C008   // Generic HTTP
+//    #define USES_C009   // FHEM HTTP
+//    #define USES_C010   // Generic UDP
+//    #define USES_C013   // ESPEasy P2P network
+    #define USES_C014   // homie 3 & 4dev MQTT
+
+//    #define NOTIFIER_SET_STABLE
+    #define NOTIFIER_SET_NONE
+
+    #define PLUGIN_SET_NONE
+
+    #ifndef USES_P086
+      #define USES_P086   // Receiving values according Homie convention. Works together with C014 Homie controller
+    #endif
+    #ifndef USES_P212
+      #define USES_P212   // MY9291 RGBW LED driver
+    #endif
+
+    #ifndef USES_P001
+//        #define USES_P001   // switch
+    #endif
+    #ifndef USES_P026
+      #define USES_P026   // SysInfo
+    #endif
+    #ifndef USES_P033
+  //    #define USES_P033   // Dummy
     #endif
     #ifndef USES_P037
 //        #define USES_P037   // MQTTImport
@@ -176,7 +263,27 @@ To create/register a plugin, you have to :
   #endif
 #endif
 
+#ifndef BUILD_MINIMAL_HOMIE_OTA
+  #ifndef WEBSERVER_TIMINGSTATS
+    #define WEBSERVER_TIMINGSTATS
+  #endif
+  #ifndef WEBSERVER_SYSVARS
+    #define WEBSERVER_SYSVARS
+  #endif
+  #ifndef WEBSERVER_NEW_UI
+    #define WEBSERVER_NEW_UI
+  #endif
+#endif
 
+/******************************************************************************\
+ * HOMIE plugins *****************************************************************
+\******************************************************************************/
+// Additional plugins for Homie convention
+#ifdef PLUGIN_BUILD_HOMIE
+    #define PLUGIN_DESCR  "Homie Convention"
+    #define USES_C014      // Homie controller
+    #define USES_P086      // Homie receiver
+#endif
 
 /******************************************************************************\
  * IR plugins *****************************************************************

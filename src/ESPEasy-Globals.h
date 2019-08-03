@@ -315,6 +315,7 @@ void check_size() {
 #define PLUGIN_TIME_CHANGE                 27
 #define PLUGIN_MONITOR                     28
 #define PLUGIN_SET_DEFAULTS                29
+#define PLUGIN_GOT_CONNECTED               30
 
 
 // Make sure the CPLUGIN_* does not overlap PLUGIN_*

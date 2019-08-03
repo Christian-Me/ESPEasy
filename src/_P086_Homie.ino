@@ -3,6 +3,8 @@
 //################################## Plugin 086: Homie receiver##########################################
 //#######################################################################################################
 
+#define P068_NO_LOG
+
 #define PLUGIN_086
 #define PLUGIN_ID_086         86
 #define PLUGIN_NAME_086       "Generic - Homie receiver [TESTING]"
@@ -20,11 +22,14 @@
 #define PLUGIN_086_VALUE_ENUM       4
 #define PLUGIN_086_VALUE_RGB        5
 #define PLUGIN_086_VALUE_HSV        6
+#define PLUGIN_086_BROADCAST        7
+#define PLUGIN_086_SUBSCRIBE        8
 
-#define PLUGIN_086_VALUE_TYPES      7
+#define PLUGIN_086_VALUE_TYPES      9
 #define PLUGIN_086_VALUE_MAX        4
 
 #define PLUGIN_086_DEBUG            true
+#define PLUGIN_086_BROADCAST_TOPIC  "homie/$broadcast/%level%"
 
 boolean Plugin_086(byte function, struct EventStruct *event, String& string)
 {
@@ -82,6 +87,8 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
         options[4] = F("enum");
         options[5] = F("rgb");
         options[6] = F("hsv");
+        options[7] = F("broadcast");
+        options[8] = F("subscribe");
         int optionValues[PLUGIN_086_VALUE_TYPES];
         optionValues[0] = PLUGIN_086_VALUE_INTEGER;
         optionValues[1] = PLUGIN_086_VALUE_FLOAT;
@@ -90,6 +97,8 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
         optionValues[4] = PLUGIN_086_VALUE_ENUM;
         optionValues[5] = PLUGIN_086_VALUE_RGB;
         optionValues[6] = PLUGIN_086_VALUE_HSV;
+        optionValues[7] = PLUGIN_086_BROADCAST;
+        optionValues[8] = PLUGIN_086_SUBSCRIBE;
         for (int i=0;i<PLUGIN_086_VALUE_MAX;i++) {
           labelText = F("Function #");
           labelText += (i+1);
@@ -117,8 +126,8 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
           if (i==0) addFormNote(F("Decimal counts for float parameter"));
           keyName = F("p086_string");
           keyName += i;
-          addFormTextBox(F("String or enum"), keyName, ExtraTaskSettings.TaskDeviceFormula[i], NAME_FORMULA_LENGTH_MAX);
-          if (i==0) addFormNote(F("Default string or enumumeration list (comma seperated)."));
+          addFormTextBox(F("Enum or Topic prefix"), keyName, ExtraTaskSettings.TaskDeviceFormula[i], NAME_FORMULA_LENGTH_MAX);
+          if (i==0) addFormNote(F("Enumumeration list (comma seperated) or subscription topic."));
         }
         success = true;
         break;
@@ -153,6 +162,60 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
         break;
       }
 
+    case PLUGIN_GOT_CONNECTED:
+      {
+        String log = "";
+        String subscribeTopic = "";
+        bool subscribeResult = false;
+
+        for (byte x=0; x<PLUGIN_086_VALUE_MAX;x++) {
+          switch (Settings.TaskDevicePluginConfig[event->TaskIndex][x]) {
+            case PLUGIN_086_BROADCAST:
+              {
+                LoadTaskSettings(event->TaskIndex);
+                subscribeTopic = PLUGIN_086_BROADCAST_TOPIC;
+                subscribeTopic.replace(F("%level%"), ExtraTaskSettings.TaskDeviceValueNames[x]);
+                subscribeResult = MQTTclient.subscribe(subscribeTopic.c_str());
+                #ifndef P086_NO_LOG
+                if (loglevelActiveFor(LOG_LEVEL_INFO)) {
+                  log = F("P086 : broadcast topic: ");
+                  log += subscribeTopic;
+                  if (subscribeResult) {
+                    log += F(" subscribed.");
+                  } else {
+                    log += F(" subscribtion FAILED!");
+                  }
+                  addLog(LOG_LEVEL_INFO,log);
+                }
+                #endif
+                success = subscribeResult;
+                break;
+              }
+            case PLUGIN_086_SUBSCRIBE:
+              {
+                LoadTaskSettings(event->TaskIndex);
+                subscribeTopic = ExtraTaskSettings.TaskDeviceFormula[x];
+                subscribeResult = MQTTclient.subscribe(subscribeTopic.c_str());
+                #ifndef P086_NO_LOG
+                if (loglevelActiveFor(LOG_LEVEL_INFO)) {
+                  log = F("P086 : subscribe topic: ");
+                  log += subscribeTopic;
+                  if (subscribeResult) {
+                    log += F(" subscribed.");
+                  } else {
+                    log += F(" subscribtion FAILED!");
+                  }
+                  addLog(LOG_LEVEL_INFO,log);
+                }
+                #endif
+                success = subscribeResult;
+                break;
+              }
+            }
+        }
+        break;
+      }
+
     case PLUGIN_READ:
       {
         for (byte x=0; x<PLUGIN_086_VALUE_MAX;x++)
@@ -176,44 +239,10 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
             LoadTaskSettings(event->Par1 -1);
             String parameter = parseStringToEndKeepCase(string,4);
             String log = "";
-/*            if (loglevelActiveFor(LOG_LEVEL_DEBUG)) {
-              log = F("P086 : Acknowledge :");
-              log += string;
-              log += F(" / ");
-              log += ExtraTaskSettings.TaskDeviceName;
-              log += F(" / ");
-              log += ExtraTaskSettings.TaskDeviceValueNames[event->Par2-1];
-              log += F(" sensorType:");
-              log += event->sensorType;
-              log += F(" Source:");
-              log += event->Source;
-              log += F(" idx:");
-              log += event->idx;
-              log += F(" S1:");
-              log += event->String1;
-              log += F(" S2:");
-              log += event->String2;
-              log += F(" S3:");
-              log += event->String3;
-              log += F(" S4:");
-              log += event->String4;
-              log += F(" S5:");
-              log += event->String5;
-              log += F(" P1:");
-              log += event->Par1;
-              log += F(" P2:");
-              log += event->Par2;
-              log += F(" P3:");
-              log += event->Par3;
-              log += F(" P4:");
-              log += event->Par4;
-              log += F(" P5:");
-              log += event->Par5;
-              addLog(LOG_LEVEL_DEBUG, log);
-            } */
             float floatValue = 0;
             String enumList = "";
             int i = 0;
+            #ifndef P086_NO_LOG
             if (loglevelActiveFor(LOG_LEVEL_INFO)) {
               log = F("P086 : deviceNr:");
               log += event->Par1;
@@ -222,98 +251,116 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
               log += F(" valueType:");
               log += Settings.TaskDevicePluginConfig[event->Par1-1][event->Par2-1];
             }
-
+            #endif
             switch (Settings.TaskDevicePluginConfig[event->Par1-1][event->Par2-1]) {
               case PLUGIN_086_VALUE_INTEGER:
               case PLUGIN_086_VALUE_FLOAT:
                 if (parameter!="") {
                   if (string2float(parameter,floatValue)) {
+                    #ifndef P086_NO_LOG
                     if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                       log += F(" integer/float set to ");
                       log += floatValue;
                       addLog(LOG_LEVEL_INFO,log);
                     }
+                    #endif
                     UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
                   } else { // float conversion failed!
+                    #ifndef P086_NO_LOG
                     if (loglevelActiveFor(LOG_LEVEL_ERROR)) {
                       log += F(" parameter:");
                       log += parameter;
                       log += F(" not a float value!");
                       addLog(LOG_LEVEL_ERROR,log);
                     }
+                    #endif
                   }
                 } else {
+                  #ifndef P086_NO_LOG
                   if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                     log += F(" value:");
                     log += UserVar[event->BaseVarIndex+event->Par2-1];
                     addLog(LOG_LEVEL_INFO,log);
                   }
+                  #endif
                 }
                 break;
 
               case PLUGIN_086_VALUE_BOOLEAN:
-                if (parameter=="false") {
-                  floatValue = 0;
-                } else {
-                  floatValue = 1;
+                if (!string2float(parameter,floatValue)) {
+                  floatValue = (parameter=="false") ? 0 : 1;
                 }
                 UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
+                #ifndef P086_NO_LOG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log += F(" boolean set to ");
-                  log += floatValue;
-                  addLog(LOG_LEVEL_INFO,log);
-                }
-                break;
-
-              case PLUGIN_086_VALUE_STRING:
-                //String values not stored to conserve flash memory
-                //safe_strncpy(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1], parameter.c_str(), sizeof(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1]));
-                if (loglevelActiveFor(LOG_LEVEL_INFO)) {
-                  log += F(" string set to ");
-                  log += parameter;
-                  addLog(LOG_LEVEL_INFO,log);
-                }
-                break;
-
-              case PLUGIN_086_VALUE_ENUM:
-                enumList = ExtraTaskSettings.TaskDeviceFormula[event->Par2-1];
-                i = 1;
-                while (parseString(enumList,i)!="") { // lookup result in enum List
-                  if (parseString(enumList,i)==parameter) {
-                    floatValue = i;
-                    break;
-                  }
-                  i++;
-                }
-                UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
-                if (loglevelActiveFor(LOG_LEVEL_INFO)) {
-                  log += F(" enum set to ");
                   log += floatValue;
                   log += F(" (");
                   log += parameter;
                   log += F(")");
                   addLog(LOG_LEVEL_INFO,log);
                 }
+                #endif
+                break;
+
+              case PLUGIN_086_VALUE_STRING:
+                //String values not stored to conserve flash memory
+                //safe_strncpy(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1], parameter.c_str(), sizeof(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1]));
+                #ifndef P086_NO_LOG
+                if (loglevelActiveFor(LOG_LEVEL_INFO)) {
+                  log += F(" string set to ");
+                  log += parameter;
+                  addLog(LOG_LEVEL_INFO,log);
+                }
+                #endif
+                break;
+
+              case PLUGIN_086_VALUE_ENUM:
+                enumList = ExtraTaskSettings.TaskDeviceFormula[event->Par2-1];
+                i = 1;
+                while (parseStringKeepCase(enumList,i)!="") { // lookup result in enum List
+                  if (parseStringKeepCase(enumList,i)==parameter) {
+                    floatValue = i;
+                    break;
+                  }
+                  i++;
+                }
+                UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
+                #ifndef P086_NO_LOG
+                if (loglevelActiveFor(LOG_LEVEL_INFO)) {
+                  log += F(" enum set to ");
+                  log += floatValue;
+                  log += F(" (");
+                  log += parameter;
+                  log += F(") from ");
+                  log += enumList;
+                  addLog(LOG_LEVEL_INFO,log);
+                }
+                #endif
                 break;
 
               case PLUGIN_086_VALUE_RGB:
                 //String values not stored to conserve flash memory
                 //safe_strncpy(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1], parameter.c_str(), sizeof(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1]));
+                #ifndef P086_NO_LOG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log += F(" RGB received ");
                   log += parameter;
                   addLog(LOG_LEVEL_INFO,log);
                 }
+                #endif
                 break;
 
               case PLUGIN_086_VALUE_HSV:
                 //String values not stored to conserve flash memory
                 //safe_strncpy(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1], parameter.c_str(), sizeof(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1]));
+                #ifndef P086_NO_LOG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log += F(" HSV received ");
                   log += parameter;
                   addLog(LOG_LEVEL_INFO,log);
                 }
+                #endif
                 break;
             }
             success = true;

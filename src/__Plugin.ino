@@ -1234,6 +1234,28 @@ byte PluginCall(byte Function, struct EventStruct *event, String& str)
         return false;
         break;
       }
+      
+    // Call to all plugins that the (mqtt) connection is established
+    case PLUGIN_GOT_CONNECTED:
+      {
+        for (byte y = 0; y < TASKS_MAX; y++)
+        {
+          if (Settings.TaskDeviceEnabled[y] && Settings.TaskDeviceNumber[y] != 0)
+          {
+            const int x = getPluginId(y);
+            if (x >= 0) {
+              TempEvent.TaskIndex = y;
+              TempEvent.BaseVarIndex = y * VARS_PER_TASK;
+              checkRAM(F("PluginCall_s"),x);
+              START_TIMER;
+              Plugin_ptr[x](Function, &TempEvent, str);
+              STOP_TIMER_TASK(x,Function);
+              delay(0); // SMY: call delay(0) unconditionally
+            }
+          }
+        }
+        break;
+      }
 
     // Call to all plugins that are used in a task
     case PLUGIN_ONCE_A_SECOND:
