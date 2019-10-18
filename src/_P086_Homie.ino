@@ -176,7 +176,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
                 subscribeTopic = PLUGIN_086_BROADCAST_TOPIC;
                 subscribeTopic.replace(F("%level%"), ExtraTaskSettings.TaskDeviceValueNames[x]);
                 subscribeResult = MQTTclient.subscribe(subscribeTopic.c_str());
-                #ifndef P086_NO_LOG
+                #ifndef BUILD_NO_DEBUG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log = F("P086 : broadcast topic: ");
                   log += subscribeTopic;
@@ -196,7 +196,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
                 LoadTaskSettings(event->TaskIndex);
                 subscribeTopic = ExtraTaskSettings.TaskDeviceFormula[x];
                 subscribeResult = MQTTclient.subscribe(subscribeTopic.c_str());
-                #ifndef P086_NO_LOG
+                #ifndef BUILD_NO_DEBUG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log = F("P086 : subscribe topic: ");
                   log += subscribeTopic;
@@ -242,7 +242,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
             float floatValue = 0;
             String enumList = "";
             int i = 0;
-            #ifndef P086_NO_LOG
+            #ifndef BUILD_NO_DEBUG
             if (loglevelActiveFor(LOG_LEVEL_INFO)) {
               log = F("P086 : deviceNr:");
               log += event->Par1;
@@ -257,7 +257,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
               case PLUGIN_086_VALUE_FLOAT:
                 if (parameter!="") {
                   if (string2float(parameter,floatValue)) {
-                    #ifndef P086_NO_LOG
+                    #ifndef BUILD_NO_DEBUG
                     if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                       log += F(" integer/float set to ");
                       log += floatValue;
@@ -266,7 +266,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
                     #endif
                     UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
                   } else { // float conversion failed!
-                    #ifndef P086_NO_LOG
+                    #ifndef BUILD_NO_DEBUG
                     if (loglevelActiveFor(LOG_LEVEL_ERROR)) {
                       log += F(" parameter:");
                       log += parameter;
@@ -276,7 +276,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
                     #endif
                   }
                 } else {
-                  #ifndef P086_NO_LOG
+                  #ifndef BUILD_NO_DEBUG
                   if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                     log += F(" value:");
                     log += UserVar[event->BaseVarIndex+event->Par2-1];
@@ -291,7 +291,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
                   floatValue = (parameter=="false") ? 0 : 1;
                 }
                 UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
-                #ifndef P086_NO_LOG
+                #ifndef BUILD_NO_DEBUG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log += F(" boolean set to ");
                   log += floatValue;
@@ -306,7 +306,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
               case PLUGIN_086_VALUE_STRING:
                 //String values not stored to conserve flash memory
                 //safe_strncpy(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1], parameter.c_str(), sizeof(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1]));
-                #ifndef P086_NO_LOG
+                #ifndef BUILD_NO_DEBUG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log += F(" string set to ");
                   log += parameter;
@@ -326,7 +326,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
                   i++;
                 }
                 UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
-                #ifndef P086_NO_LOG
+                #ifndef BUILD_NO_DEBUG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log += F(" enum set to ");
                   log += floatValue;
@@ -342,7 +342,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
               case PLUGIN_086_VALUE_RGB:
                 //String values not stored to conserve flash memory
                 //safe_strncpy(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1], parameter.c_str(), sizeof(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1]));
-                #ifndef P086_NO_LOG
+                #ifndef BUILD_NO_DEBUG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log += F(" RGB received ");
                   log += parameter;
@@ -354,7 +354,7 @@ boolean Plugin_086(byte function, struct EventStruct *event, String& string)
               case PLUGIN_086_VALUE_HSV:
                 //String values not stored to conserve flash memory
                 //safe_strncpy(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1], parameter.c_str(), sizeof(ExtraTaskSettings.TaskDeviceFormula[event->Par2-1]));
-                #ifndef P086_NO_LOG
+                #ifndef BUILD_NO_DEBUG
                 if (loglevelActiveFor(LOG_LEVEL_INFO)) {
                   log += F(" HSV received ");
                   log += parameter;
